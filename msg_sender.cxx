@@ -88,7 +88,6 @@ void msg_sender::run()
         if (ret < 0) {
             qDebug() << "select() failed!";
             qDebug() << ret;
-            qDebug() << WSAGetLastError();
             break;
         }
         if (ret == 0) {
@@ -108,7 +107,6 @@ void msg_sender::run()
                             &client_addr_len);
         if (recv_len != sizeof(pkt)) {
             qDebug() << "unknown data received.";
-            qDebug() << WSAGetLastError();
             continue;
         }
         //check packet type
