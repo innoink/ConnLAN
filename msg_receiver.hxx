@@ -17,6 +17,7 @@ public:
     void stop_server();
 private:
     void run();
+    void init_socket();
 
 signals:
     void msg_received(QString ip, QString msg);

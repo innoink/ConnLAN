@@ -18,6 +18,29 @@ void msg_sender::start_server()
     if (!stop.load()) {
         return;
     }
+    //start thread
+    stop.store(0);
+    start();
+    return;
+}
+
+void msg_sender::stop_server()
+{
+    if (stop.load()) {
+        return;
+    }
+    stop.store(1);
+}
+
+void msg_sender::init_socket()
+{
+#ifdef _WIN32
+    WSADATA wsadata;
+    if (WSAStartup(MAKEWORD(2,2), &wsadata) == SOCKET_ERROR) {
+        qDebug() << "WSAStartup() failed!";
+        return ;
+    }
+#endif
     //init server fd
     server_fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (server_fd < 0) {
@@ -34,36 +57,25 @@ void msg_sender::start_server()
         qDebug() << "bind() faild!";
         goto error;
     }
-    //start thread
-    stop.store(0);
-    start();
     return;
 error:
     return;
 }
 
-void msg_sender::stop_server()
-{
-    if (stop.load()) {
-        return;
-    }
-    stop.store(1);
-}
-
 void msg_sender::run()
 {
+    init_socket();
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     int recv_len;
-    int send_len;
-    fd_set fd_read;
-    struct timeval tv;
     while (true) {
         //thread control
         if (stop.load()) {
             break;
         }
         //select()
+        fd_set fd_read;
+        struct timeval tv;
         FD_ZERO(&fd_read);
         FD_SET(server_fd, &fd_read);
         tv.tv_sec = 1;
@@ -75,6 +87,8 @@ void msg_sender::run()
                          &tv);
         if (ret < 0) {
             qDebug() << "select() failed!";
+            qDebug() << ret;
+            qDebug() << WSAGetLastError();
             break;
         }
         if (ret == 0) {
@@ -87,13 +101,14 @@ void msg_sender::run()
         }
         //receive packet
         recv_len = recvfrom(server_fd,
-                            &pkt,
+                            (char *)&pkt,
                             sizeof(pkt),
                             0,
                             (struct sockaddr*)&client_addr,
                             &client_addr_len);
         if (recv_len != sizeof(pkt)) {
-            qDebug() << 'unknown data received.';
+            qDebug() << "unknown data received.";
+            qDebug() << WSAGetLastError();
             continue;
         }
         //check packet type
@@ -117,7 +132,11 @@ void msg_sender::run()
         emit msg_accepted();
     }
     //close fd
+#ifdef _WIN32
+    closesocket(server_fd);
+#else
     close(server_fd);
+#endif
 }
 
 void msg_sender::send_msg(QString ip, QString msg)
@@ -131,7 +150,7 @@ void msg_sender::send_msg(QString ip, QString msg)
         qDebug() << "socket() failed!";
         return;
     }
-    bzero(&client_addr, sizeof(client_addr));
+    memset(&client_addr, 0, sizeof(client_addr));
     client_addr.sin_family = AF_INET;
     client_addr.sin_port = htons(MSG_R_PORT);
     client_addr.sin_addr.s_addr = inet_addr(ip.toStdString().c_str());
@@ -141,12 +160,16 @@ void msg_sender::send_msg(QString ip, QString msg)
     memcpy(pkt.data.msg_new.msg_data, msg.toStdString().c_str(), msg.length() + 1);
 
     sendto(send_fd,
-           &pkt,
+           (const char *)&pkt,
            sizeof(pkt),
            0,
            (struct sockaddr*)&client_addr,
            client_addr_len);
+#ifdef _WIN32
+    closesocket(send_fd);
+#else
     close(send_fd);
+#endif
     msg_pending.insert(msg_no);
     msg_no++;
 }

@@ -3,9 +3,9 @@
 
 int main(int argc, char *argv[])
 {
-#ifdef WIN32
+#ifdef _WIN32
     WSADATA wsadata;
-    if (WSAStartup(MAKEWORD(1,1), &wsadata) == SOCKET_ERROR) {
+    if (WSAStartup(MAKEWORD(2,2), &wsadata) == SOCKET_ERROR) {
         qDebug() << "WSAStartup() failed!";
         return -1;
     }
@@ -13,6 +13,8 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     Widget w;
     w.show();
-
+#ifdef _WIN32
+    WSACleanup();
+#endif
     return a.exec();
 }

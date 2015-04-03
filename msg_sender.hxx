@@ -19,6 +19,7 @@ public:
 
     void send_msg(QString ip, QString msg);
 private:
+    void init_socket();
     void run();
 
 signals:

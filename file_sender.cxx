@@ -102,7 +102,7 @@ void file_sender::run()
         }
         //receive packet
         recv_len = recvfrom(server_fd,
-                             &pkt,
+                             (char *)&pkt,
                              sizeof(pkt),
                              0,
                              (struct sockaddr*)&client_addr,
@@ -125,7 +125,11 @@ void file_sender::run()
         }
     }
     //close fd
+#ifdef _WIN32
+    closesocket(server_fd);
+#else
     close(server_fd);
+#endif
 }
 
 void file_sender::send_file(QString ip, QString file_path)
@@ -139,7 +143,7 @@ void file_sender::send_file(QString ip, QString file_path)
         qDebug() << "socket() failed!";
         return;
     }
-    bzero(&client_addr, sizeof(client_addr));
+    memset(&client_addr, 0, sizeof(client_addr));
     client_addr.sin_family = AF_INET;
     client_addr.sin_port = htons(MSG_R_PORT);
     client_addr.sin_addr.s_addr = inet_addr(ip.toStdString().c_str());
@@ -153,12 +157,16 @@ void file_sender::send_file(QString ip, QString file_path)
     pkt.data.file_new.file_no = file_no;
 
     sendto(send_fd,
-           &pkt,
+           (const char *)&pkt,
            sizeof(pkt),
            0,
            (struct sockaddr*)&client_addr,
            client_addr_len);
+#ifdef _WIN32
+    closesocket(send_fd);
+#else
     close(send_fd);
+#endif
     file_pending.insert(file_no);
     file_no++;
 }

@@ -18,22 +18,6 @@ void msg_receiver::start_server()
     if (!stop.load()) {
         return;
     }
-    //init server fd
-    server_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (server_fd < 0) {
-        qDebug() << "socket() failed!";
-        goto error;
-    }
-
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    server_addr.sin_port = htons(MSG_R_PORT);
-
-    if (bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-        qDebug() << "bind() faild!";
-        goto error;
-    }
     //start thread
     stop.store(false);
     start();
@@ -50,8 +34,39 @@ void msg_receiver::stop_server()
     stop.store(1);
 }
 
+void msg_receiver::init_socket()
+{
+#ifdef _WIN32
+    WSADATA wsadata;
+    if (WSAStartup(MAKEWORD(2,2), &wsadata) == SOCKET_ERROR) {
+        qDebug() << "WSAStartup() failed!";
+        return ;
+    }
+#endif
+    //init server fd
+    server_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (server_fd < 0) {
+        qDebug() << "socket() failed!";
+        goto error;
+    }
+
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    server_addr.sin_port = htons(MSG_R_PORT);
+
+    if (bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        qDebug() << "bind() faild!";
+        goto error;
+    }
+    return;
+error:
+    return;
+}
+
 void msg_receiver::run()
 {
+    init_socket();
     struct sockaddr_in client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
     int recv_len;
@@ -87,7 +102,7 @@ void msg_receiver::run()
         }
         //receive packet
         recv_len = recvfrom(server_fd,
-                            &pkt,
+                            (char *)&pkt,
                             sizeof(pkt),
                             0,
                             (struct sockaddr*)&client_addr,
@@ -115,7 +130,7 @@ void msg_receiver::run()
         pkt_ack.data.msg_ack.is_ok  = htonl(1);
         client_addr.sin_port = htons(MSG_S_PORT);
         send_len = sendto(server_fd,
-                          &pkt_ack,
+                          (const char *)&pkt_ack,
                           sizeof(pkt_ack),
                           0,
                           (struct sockaddr*)&client_addr,
@@ -126,5 +141,9 @@ void msg_receiver::run()
         }
     }
     //close fd
+#ifdef _WIN32
+    closesocket(server_fd);
+#else
     close(server_fd);
+#endif
 }

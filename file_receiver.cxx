@@ -86,7 +86,7 @@ void file_receiver::run()
         }
         //receive packet
         recv_len = recvfrom(server_fd,
-                            &pkt,
+                            (char *)&pkt,
                             sizeof(pkt),
                             0,
                             (struct sockaddr*)&client_addr,
@@ -112,7 +112,11 @@ void file_receiver::run()
         }
     }
     //close fd
+#ifdef _WIN32
+    closesocket(server_fd);
+#else
     close(server_fd);
+#endif
 }
 
 void file_receiver::proc_file_new(QString ip, pkt_t *pkt)

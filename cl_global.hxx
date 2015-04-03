@@ -1,7 +1,7 @@
 #ifndef CL_GLOBAL_HXX
 #define CL_GLOBAL_HXX
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include <winsock2.h>
 #else
 #include <sys/socket.h>
@@ -65,6 +65,10 @@ struct pkt_t {
         } file_ack2;
     } data;
 };
+
+#ifdef _WIN32
+    typedef int socklen_t;
+#endif
 
 //recvfrom:
 //recvfrom以数据报为单位接收数据，放入缓存，如果缓存大小不够，则只存入前面的部分，后面的数据丢失。不可能存在一次读一半下次读另一半的情况。
