@@ -165,7 +165,7 @@ void file_sender::run()
                              (struct sockaddr*)&client_addr,
                              &client_addr_len);
         if (recv_len != sizeof(pkt)) {
-            qDebug() << 'unknown data received.';
+            qDebug() << "unknown data received.";
             continue;
         }
         pkt.type = ntohl(pkt.type);

@@ -87,7 +87,6 @@ void msg_sender::run()
                          &tv);
         if (ret < 0) {
             qDebug() << "select() failed!";
-            qDebug() << ret;
             break;
         }
         if (ret == 0) {

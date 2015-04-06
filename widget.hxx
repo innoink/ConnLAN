@@ -44,7 +44,11 @@ public:
 
     void log_send_msg(QString ip, QString msg);
     void log_recv_msg(QString ip, QString msg);
-
+    void log_acc_msg();
+    void log_file_accepted(QString ip);
+    void log_file_denied(QString ip);
+    void log_file_send_finished();
+    void on_file_new(QString ip, QString name, uint32_t fno, uint32_t size);
 private:
     QString get_host_ip();
 private:

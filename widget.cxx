@@ -122,43 +122,22 @@ Widget::Widget(QWidget *parent)
                 log_send_msg(le_ip->text(), te_msg->toPlainText());
             });
     connect(mr, &msg_receiver::msg_received, this, &Widget::log_recv_msg);
-    connect(ms, &msg_sender::msg_accepted,
-            [this]()
-            {
-                te_log->append(tr("message accepted"));
-            });
+    connect(ms, &msg_sender::msg_accepted, this, &Widget::log_acc_msg);
     connect(pb_send_file, &QPushButton::clicked,
             [this]()
             {
                 fs->send_file(le_ip->text(), le_file_path->text());
                 te_log->append(tr("File to %1:\nPath: %2").arg(le_ip->text()).arg(le_file_path->text()));
             });
-    connect(fs, &file_sender::file_accepted,
-            [this](QString ip)
-            {
-                te_log->append(tr("File accepted by %1").arg(ip));
-            });
-    connect(fs, &file_sender::file_denied,
-            [this](QString ip)
-            {
-                te_log->append(tr("File denied by %1").arg(ip));
-            });
-    connect(fs, &file_sender::file_send_finished,
-            [this]()
-            {
-                te_log->append(tr("File send finished."));
-            });
+    connect(fs, &file_sender::file_accepted, this, &Widget::log_file_accepted);
+    connect(fs, &file_sender::file_denied, this, &Widget::log_file_denied);
+    connect(fs, &file_sender::file_send_finished, this, &Widget::log_file_send_finished);
     connect(fs, &file_sender::file_trans_done,
             [this](QString ip)
             {
                 te_log->append(tr("File successfully transmitted to %1").arg(ip));
             });
-    connect(fr, &file_receiver::file_new,
-            [this](QString ip, QString name, uint32_t fno, uint32_t size)
-            {
-                frd->set_info(ip, name, fno, size);
-                frd->show();
-            });
+    connect(fr, &file_receiver::file_new, this, &Widget::on_file_new);
     connect(frd, &file_recv_dialog::save_path,
             [this](QString ip, uint32_t fno, QString path)
             {
@@ -205,4 +184,30 @@ void Widget::log_send_msg(QString ip, QString msg)
 void Widget::log_recv_msg(QString ip, QString msg)
 {
     te_log->append(QString(tr("Message From:%1\n%2")).arg(ip).arg(msg));
+}
+
+void Widget::log_acc_msg()
+{
+    te_log->append(tr("message accepted"));
+}
+
+void Widget::log_file_accepted(QString ip)
+{
+    te_log->append(tr("File accepted by %1").arg(ip));
+}
+
+void Widget::log_file_denied(QString ip)
+{
+    te_log->append(tr("File denied by %1").arg(ip));
+}
+
+void Widget::log_file_send_finished()
+{
+    te_log->append(tr("File send finished."));
+}
+
+void Widget::on_file_new(QString ip, QString name, uint32_t fno, uint32_t size)
+{
+    frd->set_info(ip, name, fno, size);
+    frd->show();
 }
