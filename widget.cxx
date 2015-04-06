@@ -1,5 +1,43 @@
 #include "widget.hxx"
 
+file_recv_dialog::file_recv_dialog(QWidget *parent):QDialog(parent)
+{
+    lb_info = new QLabel;
+    pb_acc = new QPushButton(tr("Accept"));
+    pb_rej = new QPushButton(tr("Reject"));
+    QVBoxLayout *vl = new QVBoxLayout;
+    QHBoxLayout *hl = new QHBoxLayout;
+    hl->addWidget(pb_acc);
+    hl->addWidget(pb_rej);
+    vl->addWidget(lb_info);
+    vl->addLayout(hl);
+    setLayout(vl);
+    connect(pb_acc, &QPushButton::clicked,
+            [this]()
+            {
+                QString path;
+                path = QFileDialog::getSaveFileName(0,
+                                                    tr("Save to"),
+                                                    "./");
+                emit save_path(ip, fno, path);
+                QDialog::accept();
+
+            });
+    connect(pb_rej, &QPushButton::clicked,
+            [this]()
+            {
+                emit file_rejected(ip, fno);
+                QDialog::reject();
+            });
+}
+
+void file_recv_dialog::set_info(QString ip, QString fname, uint32_t fno, uint32_t size)
+{
+    lb_info->setText(tr("File %1 from %2 size %3").arg(fname).arg(ip).arg(size));
+    this->ip = ip;
+    this->fno = fno;
+}
+
 Widget::Widget(QWidget *parent)
     : QWidget(parent)
 {
@@ -68,6 +106,10 @@ Widget::Widget(QWidget *parent)
     //
     mr = new msg_receiver;
     ms = new msg_sender;
+    fr = new file_receiver;
+    fs = new file_sender;
+
+    frd = new file_recv_dialog(this);
 
     connect(pb_send_msg, &QPushButton::clicked,
             [this]()
@@ -83,11 +125,57 @@ Widget::Widget(QWidget *parent)
     connect(ms, &msg_sender::msg_accepted,
             [this]()
             {
-                te_log->append(tr("message accepted\n"));
+                te_log->append(tr("message accepted"));
             });
+    connect(pb_send_file, &QPushButton::clicked,
+            [this]()
+            {
+                fs->send_file(le_ip->text(), le_file_path->text());
+                te_log->append(tr("File to %1:\nPath: %2").arg(le_ip->text()).arg(le_file_path->text()));
+            });
+    connect(fs, &file_sender::file_accepted,
+            [this](QString ip)
+            {
+                te_log->append(tr("File accepted by %1").arg(ip));
+            });
+    connect(fs, &file_sender::file_denied,
+            [this](QString ip)
+            {
+                te_log->append(tr("File denied by %1").arg(ip));
+            });
+    connect(fs, &file_sender::file_send_finished,
+            [this]()
+            {
+                te_log->append(tr("File send finished."));
+            });
+    connect(fs, &file_sender::file_trans_done,
+            [this](QString ip)
+            {
+                te_log->append(tr("File successfully transmitted to %1").arg(ip));
+            });
+    connect(fr, &file_receiver::file_new,
+            [this](QString ip, QString name, uint32_t fno, uint32_t size)
+            {
+                frd->set_info(ip, name, fno, size);
+                frd->show();
+            });
+    connect(frd, &file_recv_dialog::save_path,
+            [this](QString ip, uint32_t fno, QString path)
+            {
+                fr->set_save_file_name(ip, fno, path);
+                fr->send_file_ack1(ip, fno, true);
+            });
+    connect(frd, &file_recv_dialog::file_rejected,
+            [this](QString ip, uint32_t fno)
+            {
+                fr->send_file_ack1(ip, fno, false);
+            });
+
 
     mr->start_server();
     ms->start_server();
+    fr->start_server();
+    fs->start_server();
 }
 
 Widget::~Widget()
@@ -111,10 +199,10 @@ QString Widget::get_host_ip()
 
 void Widget::log_send_msg(QString ip, QString msg)
 {
-    te_log->append(QString(tr("Message To:%1\n%2\n")).arg(ip).arg(msg));
+    te_log->append(QString(tr("Message To:%1\n%2")).arg(ip).arg(msg));
 }
 
 void Widget::log_recv_msg(QString ip, QString msg)
 {
-    te_log->append(QString(tr("Message From:%1\n%2\n")).arg(ip).arg(msg));
+    te_log->append(QString(tr("Message From:%1\n%2")).arg(ip).arg(msg));
 }

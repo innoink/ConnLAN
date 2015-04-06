@@ -143,6 +143,7 @@ void msg_receiver::run()
     //close fd
 #ifdef _WIN32
     closesocket(server_fd);
+    WSACleanup();
 #else
     close(server_fd);
 #endif

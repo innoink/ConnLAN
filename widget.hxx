@@ -11,9 +11,28 @@
 #include <QNetworkInterface>
 #include <QFileDialog>
 #include <QFile>
+#include <QDialog>
 
 #include "msg_receiver.hxx"
 #include "msg_sender.hxx"
+#include "file_receiver.hxx"
+#include "file_sender.hxx"
+
+class file_recv_dialog : public QDialog
+{
+    Q_OBJECT
+public:
+    file_recv_dialog(QWidget *parent);
+    void set_info(QString ip, QString fname, uint32_t fno, uint32_t size);
+signals:
+    void save_path(QString ip, uint32_t fno, QString path);
+    void file_rejected(QString ip, uint32_t fno);
+private:
+    QString ip;
+    uint32_t fno;
+    QLabel *lb_info;
+    QPushButton *pb_acc, *pb_rej;
+};
 
 class Widget : public QWidget
 {
@@ -41,8 +60,12 @@ private:
     //right
     QTextEdit *te_log;
 
+    file_recv_dialog *frd;
+
     msg_receiver *mr;
     msg_sender   *ms;
+    file_receiver *fr;
+    file_sender *fs;
 };
 
 #endif // WIDGET_HXX

@@ -132,6 +132,7 @@ void msg_sender::run()
     //close fd
 #ifdef _WIN32
     closesocket(server_fd);
+    WSACleanup();
 #else
     close(server_fd);
 #endif
@@ -141,7 +142,7 @@ void msg_sender::send_msg(QString ip, QString msg)
 {
     int send_fd;
     struct sockaddr_in client_addr;
-    int client_addr_len = sizeof(client_addr);
+    socklen_t client_addr_len = sizeof(client_addr);
     struct pkt_t pkt;
 
     if ((send_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -165,6 +166,7 @@ void msg_sender::send_msg(QString ip, QString msg)
            client_addr_len);
 #ifdef _WIN32
     closesocket(send_fd);
+    WSACleanup();
 #else
     close(send_fd);
 #endif

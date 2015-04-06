@@ -55,7 +55,7 @@ struct pkt_t {
         //for file trans data -- FILE_DATA
         struct {
             uint32_t file_no;
-            uint32_t frag_no;
+            uint32_t block_no;
             char data[DATA_SIZE];
         } file_data;
         //for file trans data ack -- FILE_ACK2

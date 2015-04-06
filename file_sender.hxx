@@ -5,7 +5,7 @@
 #include <QThread>
 #include <QString>
 #include <QAtomicInt>
-#include <QSet>
+#include <QMap>
 #include "cl_global.hxx"
 
 class fs_worker : public QObject
@@ -15,11 +15,9 @@ public:
     fs_worker();
     ~fs_worker();
 public slots:
-    void send_data(QString ip, QString file_path);
+    void do_send_data(QString ip, QString file_path, uint32_t file_no);
 signals:
     void send_finished();
-private:
-    QString file_path;
 };
 
 class file_sender : public QThread
@@ -35,8 +33,20 @@ public:
     void send_file(QString ip, QString file_path);
 private:
     void run();
+    void init_socket();
+
+    void proc_file_ack1(QString ip, struct pkt_t *pkt);
+    void proc_file_ack2(QString ip, struct pkt_t *pkt);
+
+    void send_file_data(QString ip, QString path);
 
 signals:
+    void file_accepted(QString ip);
+    void file_denied(QString ip);
+    void file_trans_done(QString ip);
+    void file_send_finished(QString ip);
+    //
+    void operate_worker(QString ip, QString file_path, uint32_t file_no);
 
 public slots:
 
@@ -47,7 +57,7 @@ private:
     struct sockaddr_in server_addr;
 
     uint32_t file_no;
-    QSet<uint32_t> file_pending;
+    QMap<uint32_t, QString> file_pending;
 };
 
 #endif // FILE_SENDER_HXX
