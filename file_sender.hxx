@@ -38,7 +38,7 @@ private:
     void proc_file_ack1(QString ip, struct pkt_t *pkt);
     void proc_file_ack2(QString ip, struct pkt_t *pkt);
 
-    void send_file_data(QString ip, QString path);
+    void send_file_data(QString ip, QString path, uint32_t file_no);
 
 signals:
     void file_accepted(QString ip);

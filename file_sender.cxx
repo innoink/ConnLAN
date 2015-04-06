@@ -237,7 +237,7 @@ void file_sender::proc_file_ack1(QString ip, struct pkt_t *pkt)
         return;
     }
     emit file_accepted(ip);
-    send_file_data(ip, file_pending.value(pkt->data.file_ack1.file_no));
+    send_file_data(ip, file_pending.value(pkt->data.file_ack1.file_no), pkt->data.file_ack1.file_no);
     file_pending.remove(pkt->data.file_ack1.file_no);
 }
 
@@ -247,13 +247,16 @@ void file_sender::proc_file_ack2(QString ip, struct pkt_t *pkt)
     emit file_trans_done(ip);
 }
 
-void file_sender::send_file_data(QString ip, QString path)
+void file_sender::send_file_data(QString ip, QString path, uint32_t file_no)
 {
     QThread *worker_thread = new QThread(this);
     fs_worker *worker = new fs_worker;
     worker->moveToThread(worker_thread);
     connect(worker_thread, &QThread::finished, worker, &QObject::deleteLater);
     connect(this, &file_sender::operate_worker, worker, &fs_worker::do_send_data);
+    connect(worker_thread, &QThread::started,
+            [this, ip, path, file_no]()
+            {emit operate_worker(ip, path, file_no);});
     connect(worker, &fs_worker::send_finished,
             [this, ip](){
                 emit file_send_finished(ip);
