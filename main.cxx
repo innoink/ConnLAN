@@ -3,6 +3,7 @@
 
 int main(int argc, char *argv[])
 {
+    qRegisterMetaType<uint32_t>("uint32_t");
 #ifdef _WIN32
     WSADATA wsadata;
     if (WSAStartup(MAKEWORD(2,2), &wsadata) == SOCKET_ERROR) {

@@ -253,5 +253,6 @@ void file_receiver::send_file_ack2(QString ip, uint32_t file_no, bool is_ok)
 
 void file_receiver::set_save_file_name(QString ip, uint32_t fno, QString name)
 {
+    file_name.insert(QPair<QString, uint32_t>(ip, fno), name);
 
 }
